@@ -18,7 +18,7 @@ summary(hotel_data)
 # Next one is clearly problematic because the NA's don't mean 0
 summary(hotel_data$arrival_date_day_of_month) 
 # 2. Setting up the data
-# Trransversal -> testing
+# Transversal -> testing
 View(hotel_data.formated[1:10,])
 # Actions
 hotel_data.formated <- hotel_data
@@ -40,7 +40,9 @@ hotel_data.formated$company <- as.factor(hotel_data.formated$company)
 hotel_data.formated$customer_type <- as.factor(hotel_data.formated$customer_type)
 hotel_data.formated$reservation_status <- as.factor(hotel_data.formated$reservation_status)
 
-# ----Pre-processing 1 - Deleting missing data----
+# ----Pre-processing 1 - Filtering----
+# Canceled bookings are of no statistical interest for the hotel
+hotel_data.filtered <- hotel_data.formated[hotel_data.formated$is_canceled == FALSE,]
 # Functions
 blank_values <- function(df){
   sum = 0
@@ -49,6 +51,20 @@ blank_values <- function(df){
   }
 }
 # Work
+blank_values(hotel_data.formated)
+
+# ----Processing 1: Hotel preferences----
+str(hotel_data.filtered$hotel)
+summary(hotel_data.filtered$hotel)
+table(hotel_data.filtered$hotel)
+# Pie
+pie(table(hotel_data.filtered$hotel))
+# Bars
+plot(hotel_data.filtered$hotel, main = "Hotel bookings by hotel type", xlab = "Hotel Type", ylab = "Number of bookings", ann = TRUE)
+barplot(table(hotel_data.filtered$hotel))
+# Percentage
+prop.table(table(hotel_data.filtered$hotel))
 
 # ----Saving the data----
 save(hotel_data.formated, file = "hotel_bookings_formated.RData")
+save(hotel_data.filtered, file = "hotel_bookings_filtered.RData")
