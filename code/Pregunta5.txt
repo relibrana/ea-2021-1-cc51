@@ -1,0 +1,109 @@
+# ----Loading the data----
+hotel_data <- read.csv("~/Trabajos en R/hotel_bookings_miss.csv", header=TRUE, stringsAsFactors = FALSE,sep = ";")
+View(hotel_data[1:10,])
+
+# ----Data inspection----
+# 1. Getting to know the data
+# Upper end
+head(hotel_data)
+# Lower end
+tail(hotel_data)
+# All headers / attributes
+names(hotel_data)
+# General outlook of the dataset
+str(hotel_data)
+# Outlook of each variable in the dataset
+# Allows to see the number of NA's per column
+summary(hotel_data)
+# Next one is clearly problematic because the NA's don't mean 0
+summary(hotel_data$arrival_date_day_of_month) 
+# 2. Setting up the data
+# Transversal -> testing
+View(hotel_data.formated[1:10,])
+# Actions
+hotel_data.formated <- hotel_data
+# Booleans | Logical data
+hotel_data.formated$is_canceled <- as.logical(hotel_data.formated$is_canceled)
+hotel_data.formated$is_repeated_guest <- as.logical((hotel_data.formated$is_repeated_guest))
+# Factors
+hotel_data.formated$ï..hotel <- as.factor(hotel_data.formated$ï..hotel)
+hotel_data.formated$arrival_date_month <- as.factor(hotel_data.formated$arrival_date_month)
+hotel_data.formated$meal <- as.factor(hotel_data.formated$meal)
+hotel_data.formated$country <- as.factor(hotel_data.formated$country)
+hotel_data.formated$market_segment <- as.factor(hotel_data.formated$market_segment)
+hotel_data.formated$distribution_channel <- as.factor(hotel_data.formated$distribution_channel)
+hotel_data.formated$reserved_room_type <- as.factor(hotel_data.formated$reserved_room_type)
+hotel_data.formated$assigned_room_type <- as.factor(hotel_data.formated$assigned_room_type)
+hotel_data.formated$deposit_type <- as.factor(hotel_data.formated$deposit_type)
+hotel_data.formated$agent <- as.factor(hotel_data.formated$agent)
+hotel_data.formated$company <- as.factor(hotel_data.formated$company)
+hotel_data.formated$customer_type <- as.factor(hotel_data.formated$customer_type)
+hotel_data.formated$reservation_status <- as.factor(hotel_data.formated$reservation_status)
+
+# ----Pre-processing 1 - Filtering----
+# Canceled bookings are of no statistical interest for the hotel
+hotel_data.filtered <- hotel_data.formated[hotel_data.formated$is_canceled == FALSE,]
+# Functions
+blank_values <- function(df){
+  sum = 0
+  for(i in 1:ncol(df)){
+    cat("Column: ",colnames(df[i]), "\t", "Blank values: ", colSums(df[i] == ""), "\n")
+  }
+}
+# Work
+blank_values(hotel_data.formated)
+
+# ----Processing 1: Hotel preferences----
+str(hotel_data.filtered$hotel)
+summary(hotel_data.filtered$hotel)
+table(hotel_data.filtered$hotel)
+# Pie
+pie(table(hotel_data.filtered$hotel))
+# Bars
+plot(hotel_data.filtered$hotel, main = "Hotel bookings by hotel type", xlab = "Hotel Type", ylab = "Number of bookings", ann = TRUE)
+barplot(table(hotel_data.filtered$hotel))
+# Percentage
+prop.table(table(hotel_data.filtered$hotel))
+
+# ----Saving the data----
+save(hotel_data.formated, file = "hotel_bookings_formated.RData")
+save(hotel_data.filtered, file = "hotel_bookings_filtered.RData")
+
+
+# ----Processing 5: Number of babies and childrens---
+sum(hotel_data.formated$babies)
+hotel_data.filtered <- hotel_data.formated[hotel_data.formated$is_canceled == FALSE & !is.na(hotel_data.formated$babies) & !is.na(hotel_data.formated$children),]
+"""babies <- as.numeric(hotel_data.filtered$babies)
+sum(hotel_data.filtered$babies == 0)
+sum(hotel_data.filtered$babies != 0)
+summary(hotel_data.formated$ï..hotel)
+summary(hotel_data.filtered$ï..hotel)
+summary(babies)
+#counts.babies = table(hotel_data.filtered$babies[hotel_data.filtered$babies != 0], hotel_data.filtered$ï..hotel[hotel_data.filtered$babies != 0])
+counts.babies = table(as.numeric(babies),hotel_data.filtered$ï..hotel)
+counts.babies"""
+#sum(hotel_data.filtered$babies[hotel_data.filtered$ï..hotel == "City Hotel" & hotel_data.filtered$babies!=0])
+#barplot(counts.babies,
+#        main = "Gráfico de barras agrupado",
+#        xlab = "Tipo de transmisión", ylab = "Frecuencia",
+#        col = c("darkgrey", "darkblue", "red"), beside = TRUE)
+##La desesperada:
+a <- sum(hotel_data.filtered$babies[hotel_data.filtered$ï..hotel == "Resort Hotel"])
+b <- sum(hotel_data.filtered$babies[hotel_data.filtered$ï..hotel == "City Hotel"])
+c <- sum(hotel_data.filtered$children[hotel_data.filtered$ï..hotel == "Resort Hotel"])
+d <- sum(hotel_data.filtered$children[hotel_data.filtered$ï..hotel == "City Hotel"])
+sum(hotel_data.filtered$children)
+sum(hotel_data.filtered$children != 0)
+x <- c(a,b,c,d)
+dim(x)<- c(2,2)
+x
+colnames(x) <- c("Babies", "Childrens")
+rownames(x) <- c("Resort Hotel", "City Hotel")
+x
+weaymedia <- barplot(x,main = "Numero de niños/bebés por tipo de hotel",
+        col = rainbow(2), 
+        beside = TRUE,
+        space = c(0,0.1),
+        legend.text = rownames(x),
+        args.legend = list(title = "Tipo de hotel", x = "topright",inset = c(0.5, 0)))
+text(weaymedia,x/2, labels = x)
