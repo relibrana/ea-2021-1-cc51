@@ -1,0 +1,136 @@
+# ----Loading the data----
+hotel_data <- read.csv("https://raw.githubusercontent.com/relibrana/ea-2021-1-cc51/main/data/hotel_bookings_miss.csv", header=TRUE, stringsAsFactors = FALSE)
+View(hotel_data[1:10,])
+
+# ----Data inspection----
+# 1. Getting to know the data
+# Upper end
+head(hotel_data)
+# Lower end
+tail(hotel_data)
+# All headers / attributes
+names(hotel_data)
+# General outlook of the dataset
+str(hotel_data)
+# Outlook of each variable in the dataset
+# Allows to see the number of NA's per column
+summary(hotel_data)
+# Next one is clearly problematic because the NA's don't mean 0
+summary(hotel_data$arrival_date_day_of_month) 
+# 2. Setting up the data
+# Transversal -> testing
+View(hotel_data.formated[1:10,])
+# Actions
+hotel_data.formated <- hotel_data
+# Booleans | Logical data
+hotel_data.formated$is_canceled <- as.logical(hotel_data.formated$is_canceled)
+hotel_data.formated$is_repeated_guest <- as.logical((hotel_data.formated$is_repeated_guest))
+# Factors
+hotel_data.formated$hotel <- as.factor(hotel_data.formated$hotel)
+hotel_data.formated$arrival_date_month <- as.factor(hotel_data.formated$arrival_date_month)
+hotel_data.formated$meal <- as.factor(hotel_data.formated$meal)
+hotel_data.formated$country <- as.factor(hotel_data.formated$country)
+hotel_data.formated$market_segment <- as.factor(hotel_data.formated$market_segment)
+hotel_data.formated$distribution_channel <- as.factor(hotel_data.formated$distribution_channel)
+hotel_data.formated$reserved_room_type <- as.factor(hotel_data.formated$reserved_room_type)
+hotel_data.formated$assigned_room_type <- as.factor(hotel_data.formated$assigned_room_type)
+hotel_data.formated$deposit_type <- as.factor(hotel_data.formated$deposit_type)
+hotel_data.formated$agent <- as.factor(hotel_data.formated$agent)
+hotel_data.formated$company <- as.factor(hotel_data.formated$company)
+hotel_data.formated$customer_type <- as.factor(hotel_data.formated$customer_type)
+hotel_data.formated$reservation_status <- as.factor(hotel_data.formated$reservation_status)
+
+# ----Pre-processing----
+hotel_data.ready <- hotel_data.formated
+# Functions
+blank_values <- function(df){
+  sum = 0
+  for(i in 1:ncol(df)){
+    cat("Column: ",colnames(df[i]), "\t", "Blank values: ", colSums(df[i] == ""), "\n")
+  }
+}
+
+na_values <- function(df){
+  for(i in 1:ncol(df)){
+    nas <- sum(is.na(df[i]))
+    if(nas > 0){
+      cat(colnames(df[i]), ": ", nas, " NAs\n")
+    }
+  }
+}
+
+mean_over_na <- function(df, cols){
+  for(lbl in cols){
+    i <- grep(lbl, colnames(df))
+    mean <- mean(df[!is.na(df[i]), i])
+    cat(mean, "\t")
+    df[is.na(df[i]), i] <- mean
+    cat(sum(is.na(df[i])), "\n")
+  }
+  return(df)
+}
+
+random_over_na <- function(df, cols){
+  for(lbl in cols){
+    i <- grep(lbl, colnames(df))
+    rand <- sample(df[i][!is.na(df[i])], sum(is.na(df[i])), replace=TRUE)
+    cat(rand, "\t")
+    df[is.na(df[i]), i] <- rand
+    cat(sum(is.na(df[i])), "\n")
+  }
+  return(df)
+}
+
+# Checking for blank values
+blank_values(hotel_data.ready)
+# Result: there are no blank values except the NA values
+summary(hotel_data.ready)
+na_values(hotel_data.ready)
+# Result: the columns that must be modified to make up for NA values are:
+# lead_time, arrival_date_year, arrival_date_week_number, arrival_date_day_of_month,
+# stays_in_weekend_nights, stays_in_week_nights, adults, children, babies & days_in_waiting_list
+
+# lead_time is the time between the reservation and the stay, so it is accurate to simply replace by the mean
+hotel_data.ready <- mean_over_na(hotel_data.ready, c("lead_time"))
+# arrival_date_year could be the median, but assigning it the value of a random element would work fine
+# -> because that way it won't be the same value, but it will still be influenced by proportions
+hotel_data.ready <- random_over_na(hotel_data.ready, c("arrival_date_year"))
+# arrival_date_week_number & arrival_date_day_of_month & stays_in_weekend_nights & stays_in_week_nights will also be replaced with random value from the same column
+hotel_data.ready <- random_over_na(hotel_data.ready, c("arrival_date_year", "arrival_date_week_number", "arrival_date_day_of_month", "stays_in_weekend_nights", "stays_in_week_nights", "days_in_waiting_list"))
+# For adults, children & babies, it will be replaced by the mean, to maintain the column properties without losing registers
+hotel_data.ready <- mean_over_na(hotel_data.ready, c("adults", "children", "babies"))
+
+# ----Processing 1: Hotel preferences----
+hotel_data.filtered <- hotel_data.ready[hotel_data.ready$is_canceled == FALSE,]
+str(hotel_data.filtered$hotel)
+hotel_prefs <- hotel_data.filtered$hotel
+# Pie
+pie(table(hotel_data.filtered$hotel))
+# Bars
+## Make the frequencies numbers
+freqs <- c(sum(hotel_prefs == "Hotel"), sum(hotel_prefs == "Resort"))
+## Find a range of y's that'll leave sufficient space above the tallest bar
+ylim <- c(0, 1.1*max(freqs))
+## Plot, and store x-coordinates of bars in xx
+xx <- barplot(hotel_preferences, xaxt = 'n', xlab = '', width = 0.85, ylim = ylim, main = "Hotel preferences", ylab = "Frequency")
+## Add text at top of bars
+text(x = xx, y = freqs, label = freqs, pos = 3, cex = 0.8, col = "red")
+## Add x-axis labels 
+axis(1, at=xx, labels=hotel_prefs, tick=FALSE, las=2, line=-0.5, cex.axis=0.5)
+
+plot(hotel_data.filtered$hotel, col = c("grey", "green"), main = "Hotel bookings by hotel type", xlab = "Hotel Type", ylab = "Number of bookings", ann = TRUE)
+barplot(table(hotel_data.filtered$hotel), col = c("black", "green"))
+# Percentage
+prop.table(table(hotel_data.filtered$hotel))
+
+# ----Processing 2: Demand trend----
+# do not take 2015
+demand_data <- hotel_data.filtered[complete.cases(hotel_data.filtered$arrival_date_year),]
+plot(demand_data$arrival_date_year, breaks = c(-Inf, 2015, 2016, 2017, Inf))
+hist(demand_data$arrival_date_year, breaks = 3, freq=TRUE)
+plot(demand_data$hotel ~ demand_data$arrival_date_year)
+
+
+# ----Saving the data----
+save(hotel_data.formated, file = "hotel_bookings_formated.RData")
+save(hotel_data.filtered, file = "hotel_bookings_filtered.RData")
