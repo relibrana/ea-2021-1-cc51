@@ -76,6 +76,14 @@ monthC=table(hotel_data.filtered2$arrival_date_month,hotel_data.filtered2$arriva
 monthC
 as.data.frame.matrix(monthC) 
 barplot(monthC, legend=TRUE, beside=TRUE,main='Numbers of month cancelations by year',col = rainbow(12)) 
-media<-round(rowMeans(monthC))
-isCanceledByMonth<-as.data.frame(media)
+means2<-round(rowMeans(monthC))
+isCanceledByMonth<-as.data.frame(means2)
+isCanceledByMonth
+cTert = quantile(isCanceledByMonth$means2, c(0:3/3))
+cTert
+isCanceledByMonth$cancelations = with(isCanceledByMonth, 
+                       cut(means2, 
+                           cTert, 
+                           include.lowest = T, 
+                           labels = c("Low", "Medium", "High")))
 isCanceledByMonth
