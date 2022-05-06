@@ -54,12 +54,12 @@ blank_values <- function(df){
 
 monthTable<-table(hotel_data.filtered1$arrival_date_month,hotel_data.filtered1$arrival_date_year)
 monthTable
-barplot(monthTable, legend=TRUE, beside=TRUE,main='Mean of months by year',col = rainbow(12)) 
+barplot(monthTable, legend=FALSE, beside=TRUE,main='Cantidad de reservas en cada mes por año',col = rainbow(12))
 as.data.frame.matrix(monthTable) 
 rowSums(monthTable)
 round(rowMeans(monthTable))
-barplot(round(rowMeans(monthTable)), legend=FALSE, beside=TRUE,main='',col = rainbow(12)) 
-means<-round(rowMeans(tablita))
+barplot(round(rowMeans(monthTable)), legend=FALSE, beside=TRUE,main='Media de los meses en todos los años',col = rainbow(12)) 
+means<-round(rowMeans(monthTable))
 dataMonths<-as.data.frame(means)
 dataMonths
 vTert = quantile(dataMonths$means, c(0:3/3))
@@ -75,7 +75,7 @@ hotel_data.filtered2 <- hotel_data.formated[hotel_data.formated$is_canceled == T
 monthC=table(hotel_data.filtered2$arrival_date_month,hotel_data.filtered2$arrival_date_year)
 monthC
 as.data.frame.matrix(monthC) 
-barplot(monthC, legend=FALSE, beside=TRUE,main='Numbers of month cancelations by year',col = rainbow(12)) 
+barplot(monthC, legend=TRUE, beside=TRUE,main='Numbers of month cancelations by year',col = rainbow(12)) 
 media<-round(rowMeans(monthC))
 isCanceledByMonth<-as.data.frame(media)
 isCanceledByMonth
