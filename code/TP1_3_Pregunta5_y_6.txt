@@ -1,0 +1,218 @@
+# ----Loading the data----
+hotel_data <- read.csv("~/Trabajos en R/hotel_bookings_miss.csv", header=TRUE, stringsAsFactors = FALSE,sep = ";")
+View(hotel_data[1:10,])
+
+# ----Data inspection----
+# 1. Getting to know the data
+# Upper end
+head(hotel_data)
+# Lower end
+tail(hotel_data)
+# All headers / attributes
+names(hotel_data)
+# General outlook of the dataset
+str(hotel_data)
+# Outlook of each variable in the dataset
+# Allows to see the number of NA's per column
+summary(hotel_data)
+# Next one is clearly problematic because the NA's don't mean 0
+summary(hotel_data$arrival_date_day_of_month) 
+# 2. Setting up the data
+# Transversal -> testing
+View(hotel_data.formated[1:10,])
+# Actions
+hotel_data.formated <- hotel_data
+# Booleans | Logical data
+hotel_data.formated$is_canceled <- as.logical(hotel_data.formated$is_canceled)
+hotel_data.formated$is_repeated_guest <- as.logical((hotel_data.formated$is_repeated_guest))
+# Factors
+hotel_data.formated$hotel <- as.factor(hotel_data.formated$hotel)
+hotel_data.formated$arrival_date_month <- as.factor(hotel_data.formated$arrival_date_month)
+hotel_data.formated$meal <- as.factor(hotel_data.formated$meal)
+hotel_data.formated$country <- as.factor(hotel_data.formated$country)
+hotel_data.formated$market_segment <- as.factor(hotel_data.formated$market_segment)
+hotel_data.formated$distribution_channel <- as.factor(hotel_data.formated$distribution_channel)
+hotel_data.formated$reserved_room_type <- as.factor(hotel_data.formated$reserved_room_type)
+hotel_data.formated$assigned_room_type <- as.factor(hotel_data.formated$assigned_room_type)
+hotel_data.formated$deposit_type <- as.factor(hotel_data.formated$deposit_type)
+hotel_data.formated$agent <- as.factor(hotel_data.formated$agent)
+hotel_data.formated$company <- as.factor(hotel_data.formated$company)
+hotel_data.formated$customer_type <- as.factor(hotel_data.formated$customer_type)
+hotel_data.formated$reservation_status <- as.factor(hotel_data.formated$reservation_status)
+
+# ----Pre-processing----
+hotel_data.ready <- hotel_data.formated
+# Functions
+blank_values <- function(df){
+  sum = 0
+  for(i in 1:ncol(df)){
+    cat("Column: ",colnames(df[i]), "\t", "Blank values: ", colSums(df[i] == ""), "\n")
+  }
+}
+
+na_values <- function(df){
+  for(i in 1:ncol(df)){
+    nas <- sum(is.na(df[i]))
+    if(nas > 0){
+      cat(colnames(df[i]), ": ", nas, " NAs\n")
+    }
+  }
+}
+
+mean_over_na <- function(df, cols){
+  for(lbl in cols){
+    i <- grep(lbl, colnames(df))
+    mean <- mean(df[!is.na(df[i]), i])
+    cat(mean, "\t")
+    df[is.na(df[i]), i] <- mean
+    cat(sum(is.na(df[i])), "\n")
+  }
+  return(df)
+}
+
+random_over_na <- function(df, cols){
+  for(lbl in cols){
+    i <- grep(lbl, colnames(df))
+    rand <- sample(df[i][!is.na(df[i])], sum(is.na(df[i])), replace=TRUE)
+    cat(rand, "\t")
+    df[is.na(df[i]), i] <- rand
+    cat(sum(is.na(df[i])), "\n")
+  }
+  return(df)
+}
+
+# Checking for blank values
+blank_values(hotel_data.ready)
+# Result: there are no blank values except the NA values
+summary(hotel_data.ready)
+na_values(hotel_data.ready)
+# Result: the columns that must be modified to make up for NA values are:
+# lead_time, arrival_date_year, arrival_date_week_number, arrival_date_day_of_month,
+# stays_in_weekend_nights, stays_in_week_nights, adults, children, babies & days_in_waiting_list
+
+# lead_time is the time between the reservation and the stay, so it is accurate to simply replace by the mean
+hotel_data.ready <- mean_over_na(hotel_data.ready, c("lead_time"))
+# arrival_date_year could be the median, but assigning it the value of a random element would work fine
+# -> because that way it won't be the same value, but it will still be influenced by proportions
+hotel_data.ready <- random_over_na(hotel_data.ready, c("arrival_date_year"))
+# arrival_date_week_number & arrival_date_day_of_month & stays_in_weekend_nights & stays_in_week_nights will also be replaced with random value from the same column
+hotel_data.ready <- random_over_na(hotel_data.ready, c("arrival_date_year", "arrival_date_week_number", "arrival_date_day_of_month", "stays_in_weekend_nights", "stays_in_week_nights", "days_in_waiting_list"))
+# For adults, children & babies, it will be replaced by the mean, to maintain the column properties without losing registers
+hotel_data.ready <- mean_over_na(hotel_data.ready, c("adults", "children", "babies"))
+
+
+# ----Pre-processing 1 - Filtering----
+# Canceled bookings are of no statistical interest for the hotel
+hotel_data.filtered <- hotel_data.formated[hotel_data.formated$is_canceled == FALSE,]
+# Functions
+blank_values <- function(df){
+  sum = 0
+  for(i in 1:ncol(df)){
+    cat("Column: ",colnames(df[i]), "\t", "Blank values: ", colSums(df[i] == ""), "\n")
+  }
+}
+# Work
+blank_values(hotel_data.formated)
+
+# ----Processing 1: Hotel preferences----
+str(hotel_data.filtered$hotel)
+summary(hotel_data.filtered$hotel)
+table(hotel_data.filtered$hotel)
+# Pie
+pie(table(hotel_data.filtered$hotel))
+# Bars
+plot(hotel_data.filtered$hotel, main = "Hotel bookings by hotel type", xlab = "Hotel Type", ylab = "Number of bookings", ann = TRUE)
+barplot(table(hotel_data.filtered$hotel))
+# Percentage
+prop.table(table(hotel_data.filtered$hotel))
+
+# ----Saving the data----
+save(hotel_data.formated, file = "hotel_bookings_formated.RData")
+save(hotel_data.filtered, file = "hotel_bookings_filtered.RData")
+
+
+# ----PreProcessing 5: Number of babies and childrens---
+layout(matrix(c(1:1), nrow=1, byrow=FALSE))
+layout.show(1)
+hotel_data.filtered <- hotel_data.ready
+hotel_data.filtered <- hotel_data.ready[hotel_data.ready$is_canceled == FALSE,]
+# ----Processing 5: Number of babies and childrens
+#Initializing variables
+a <- sum(hotel_data.filtered$babies[hotel_data.filtered$hotel == "Resort Hotel"])
+b <- sum(hotel_data.filtered$babies[hotel_data.filtered$hotel == "City Hotel"])
+c <- sum(hotel_data.filtered$children[hotel_data.filtered$hotel == "Resort Hotel"])
+d <- sum(hotel_data.filtered$children[hotel_data.filtered$hotel == "City Hotel"])
+
+#Creating matrix
+#Vector
+x <- c(a,b,c,d)
+#Matrix
+dim(x)<- c(2,2)
+#Changing names
+colnames(x) <- c("Babies", "Childrens")
+rownames(x) <- c("Resort Hotel", "City Hotel")
+#Plot
+pregunta5 <- barplot(x,main = "Numero de niños/bebés por tipo de hotel",
+        col = rainbow(2), 
+        beside = TRUE,
+        space = c(0,0.1),
+        legend.text = rownames(x),
+        args.legend = list(title = "Tipo de hotel", x = "topright",inset = c(0.5, 0)))
+text(pregunta5,x/2, labels = x)
+
+##Pregunta 6
+
+##preprocessing data needed
+#hotel_data.filtered <- hotel_data.formated
+#hotel_data.filtered <- hotel_data.ready[!is.na(hotel_data.formated$arrival_date_year),]
+
+##Initial table for Resort Hotel & City Hotel
+hotel_data.filtered <- hotel_data.ready
+
+spaces.by.hotel <- table(hotel_data.filtered$required_car_parking_spaces[hotel_data.filtered$required_car_parking_spaces == 0 & hotel_data.filtered$hotel == "Resort Hotel"],
+                         hotel_data.filtered$arrival_date_year[hotel_data.filtered$required_car_parking_spaces == 0 & hotel_data.filtered$hotel == "Resort Hotel"])
+
+spaces.by.hotel.city <- table(hotel_data.filtered$required_car_parking_spaces[hotel_data.filtered$required_car_parking_spaces == 0 & hotel_data.filtered$hotel == "City Hotel"],
+                         hotel_data.filtered$arrival_date_year[hotel_data.filtered$required_car_parking_spaces == 0 & hotel_data.filtered$hotel == "City Hotel"])
+
+##Initialazing variables
+sum.2015 <- sum(hotel_data.filtered$required_car_parking_spaces[hotel_data.filtered$arrival_date_year == 2015 & hotel_data.filtered$hotel == "Resort Hotel"])
+sum.2016 <- sum(hotel_data.filtered$required_car_parking_spaces[hotel_data.filtered$arrival_date_year == 2016 & hotel_data.filtered$hotel == "Resort Hotel"])
+sum.2017 <- sum(hotel_data.filtered$required_car_parking_spaces[hotel_data.filtered$arrival_date_year == 2017 & hotel_data.filtered$hotel == "Resort Hotel"])
+
+sum.2015.city <- sum(hotel_data.filtered$required_car_parking_spaces[hotel_data.filtered$arrival_date_year == 2015 & hotel_data.filtered$hotel == "City Hotel"])
+sum.2016.city <- sum(hotel_data.filtered$required_car_parking_spaces[hotel_data.filtered$arrival_date_year == 2016 & hotel_data.filtered$hotel == "City Hotel"])
+sum.2017.city <- sum(hotel_data.filtered$required_car_parking_spaces[hotel_data.filtered$arrival_date_year == 2017 & hotel_data.filtered$hotel == "City Hotel"])
+
+##Adding information to the table
+rest_spaces.by.hotel <- c(sum.2015,sum.2016,sum.2017)
+rest_spaces.by.hotel.city <- c(sum.2015.city,sum.2016.city,sum.2017.city)
+
+spaces.by.hotel <- rbind(spaces.by.hotel,rest_spaces.by.hotel)
+spaces.by.hotel.city <- rbind(spaces.by.hotel.city, rest_spaces.by.hotel.city)
+
+##Changing the names
+rownames(spaces.by.hotel) = c("Didn't require", "Accumulation \n of requests")
+rownames(spaces.by.hotel.city) = c("Didn't require", "Accumulation \n of requests")
+
+##Plot
+layout(matrix(c(1:2), nrow=1, byrow=FALSE))
+
+#layout.show(2)
+pregunta6.desperate.Resort_Hotel <- barplot(spaces.by.hotel,
+                     main = "Number of request of parking by year",
+                     beside = TRUE, 
+                     col = rainbow(2), 
+                     legend.text = rownames(spaces.by.hotel),
+                     args.legend = list(title = "Legend", x = "topright",inset = c(-0.1, 0)), 
+                     xlab = "Resort Hotel")
+text(pregunta6.desperate.Resort_Hotel, spaces.by.hotel/2, labels = spaces.by.hotel)
+
+pregunta6.desperate.City.Hotel <- barplot(spaces.by.hotel.city,
+                                            main = "Number of request of parking by year",
+                                            beside = TRUE, 
+                                            col = rainbow(2), 
+                                            legend.text = rownames(spaces.by.hotel.city),
+                                            args.legend = list(title = "Legend", x = "topright",inset = c(-0.1, 0)), 
+                                            xlab = "City Hotel")
+text(pregunta6.desperate.City.Hotel, spaces.by.hotel.city/2, labels = spaces.by.hotel.city)
